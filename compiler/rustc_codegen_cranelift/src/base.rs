@@ -41,7 +41,7 @@ pub(crate) fn codegen_fn<'tcx>(
 ) -> CodegenedFunction {
     debug_assert!(!instance.args.has_infer());
 
-    let symbol_name = tcx.symbol_name(instance).name.to_string();
+    let symbol_name = instance_symbol_name_for_object(tcx, instance).into_owned();
     let _timer = tcx.prof.generic_activity_with_arg("codegen fn", &*symbol_name);
 
     let mir = tcx.instance_mir(instance.def);
@@ -1101,14 +1101,14 @@ fn codegen_panic_inner<'tcx>(
         return;
     }
 
-    let symbol_name = fx.tcx.symbol_name(instance).name;
+    let symbol_name = instance_symbol_name_for_object(fx.tcx, instance);
 
     let sig = Signature {
         params: args.iter().map(|&arg| AbiParam::new(fx.bcx.func.dfg.value_type(arg))).collect(),
         returns: vec![],
         call_conv: fx.target_config.default_call_conv,
     };
-    let func_id = fx.module.declare_function(symbol_name, Linkage::Import, &sig).unwrap();
+    let func_id = fx.module.declare_function(&symbol_name, Linkage::Import, &sig).unwrap();
     let func_ref = fx.module.declare_func_in_func(func_id, fx.bcx.func);
     if fx.clif_comments.enabled() {
         fx.add_comment(func_ref, format!("{:?}", symbol_name));

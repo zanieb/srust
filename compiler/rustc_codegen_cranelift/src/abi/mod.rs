@@ -98,9 +98,9 @@ pub(crate) fn import_function<'tcx>(
     module: &mut dyn Module,
     inst: Instance<'tcx>,
 ) -> FuncId {
-    let name = tcx.symbol_name(inst).name;
+    let name = instance_symbol_name_for_object(tcx, inst);
     let sig = get_function_sig(tcx, module.target_config().default_call_conv, inst);
-    match module.declare_function(name, Linkage::Import, &sig) {
+    match module.declare_function(&name, Linkage::Import, &sig) {
         Ok(func_id) => func_id,
         Err(ModuleError::IncompatibleDeclaration(_)) => tcx.dcx().fatal(format!(
             "attempt to declare `{name}` as function, but it was already declared as static"
