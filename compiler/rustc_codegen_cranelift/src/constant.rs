@@ -414,7 +414,7 @@ fn define_all_allocs(tcx: TyCtxt<'_>, module: &mut dyn Module, cx: &mut Constant
         data.set_align(alloc.align.bytes());
 
         if let Some(section_name) = section_name {
-            let (segment_name, section_name) = if tcx.sess.target.is_like_darwin {
+            let (segment_name, section_name, macho_flags) = if tcx.sess.target.is_like_darwin {
                 // See https://github.com/llvm/llvm-project/blob/main/llvm/lib/MC/MCSectionMachO.cpp
                 let mut parts = section_name.as_str().split(',');
                 let Some(segment_name) = parts.next() else {
@@ -452,13 +452,17 @@ fn define_all_allocs(tcx: TyCtxt<'_>, module: &mut dyn Module, cx: &mut Constant
                         section_name
                     ));
                 }
-                // FIXME(bytecodealliance/wasmtime#8901) set S_CSTRING_LITERALS section type when
-                // cstring_literals is specified
-                (segment_name, section_name)
+                let macho_flags = match section_type {
+                    "regular" => object::macho::S_REGULAR,
+                    "cstring_literals" => object::macho::S_CSTRING_LITERALS,
+                    "mod_init_funcs" => object::macho::S_MOD_INIT_FUNC_POINTERS,
+                    _ => unreachable!(),
+                };
+                (segment_name, section_name, macho_flags)
             } else {
-                ("", section_name.as_str())
+                ("", section_name.as_str(), 0)
             };
-            data.set_segment_section(segment_name, section_name);
+            data.set_segment_section(segment_name, section_name, macho_flags);
         }
 
         let bytes = alloc.inspect_with_uninit_and_ptr_outside_interpreter(0..alloc.len()).to_vec();
