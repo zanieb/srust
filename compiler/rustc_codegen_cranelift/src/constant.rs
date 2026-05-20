@@ -436,7 +436,10 @@ fn define_all_allocs(tcx: TyCtxt<'_>, module: &mut dyn Module, cx: &mut Constant
                     ));
                 }
                 let section_type = parts.next().unwrap_or("regular");
-                if section_type != "regular" && section_type != "cstring_literals" {
+                if section_type != "regular"
+                    && section_type != "cstring_literals"
+                    && section_type != "mod_init_funcs"
+                {
                     tcx.dcx().fatal(format!(
                         "#[link_section = \"{}\"] is not supported: unsupported section type {}",
                         section_name, section_type,
